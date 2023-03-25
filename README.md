@@ -1,1 +1,28 @@
-> 相关链接：\n> - \n\n<a name=\"HQ17Q\"></a>\n### 学到了！\n```javascript\nexport async function detectPackageManager(cwd = process.cwd()): Promise<Agent | null> {\n  let agent: Agent | null = null\n\t// 通过LOCK文件来试探 包管理器\n  const lockPath = await findUp(Object.keys(LOCKS), { cwd })\n  let packageJsonPath: string | undefined\n\n  if (lockPath)\n    packageJsonPath = path.resolve(lockPath, '../package.json')\n  else\n    packageJsonPath = await findUp('package.json', { cwd })\n\t// 找到packageJsonPath\n  if (packageJsonPath && fs.existsSync(packageJsonPath)) {\n    try {\n      // 读取并parse package文件\n      const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))\n      // 读取packageManager\n      if (typeof pkg.packageManager === 'string') {\n        const [name, version] = pkg.packageManager.split('@')\n        if (name === 'yarn' && parseInt(version) > 1)\n          agent = 'yarn@berry'\n        else if (name === 'pnpm' && parseInt(version) < 7)\n          agent = 'pnpm@6'\n        else if (name in AGENTS)\n          agent = name\n        else\n          console.warn('[ni] Unknown packageManager:', pkg.packageManager)\n      }\n    }\n    catch {}\n  }\n\n  // 无package.json的packageManager字段，则完全基于LOCK文件\n  if (!agent && lockPath)\n    agent = LOCKS[path.basename(lockPath)]\n\n  return agent\n}\n```\n\n```javascript\nexeca(\n  // 包管理器\n  agent,\n  [\n    agent === 'yarn'\n      ? 'add'\n      : 'install',\n    options.dev ? '-D' : '',\n    // options.additionalArgs\n    ...args,\n    // 要下载的包\n    ...names,\n  ].filter(Boolean),\n  {\n    // stdio方式\n    stdio: options.silent ? 'ignore' : 'inherit',\n    // 执行的路径\n    cwd: options.cwd,\n  },\n)\n```\n\n```javascript\n  \"dependencies\": {\n    // 执行命令行\n    \"execa\": \"^5.1.1\",\n    // 查找文件\n    \"find-up\": \"^5.0.0\"\n  },\n  \"devDependencies\": {\n    // eslint规则，推荐xo\n    \"@antfu/eslint-config\": \"^0.27.0\",\n    // 自动根据LOCK文件寻找包管理器\n    \"@antfu/ni\": \"^0.18.0\",\n    \"@types/node\": \"^16.11.59\",\n    // 交互式提升版本号\n    \"bumpp\": \"^8.2.1\",\n    \"eslint\": \"^8.23.1\",\n    // 也就是tsx/cli：https://github.com/esbuild-kit/tsx/blob/develop/src/cli.ts\n    \"esno\": \"^0.16.3\",\n    // ts打包 最简单、最快的方法。\n    \"tsup\": \"^6.2.3\",\n    \"typescript\": \"^4.8.3\"\n  }\n```\n\n```javascript\n\"scripts\": {\n  \"prepublishOnly\": \"nr build\",\n  \"dev\": \"nr build --watch\",\n  // 也就是tsx/cli\n  \"start\": \"esno src/index.ts\",\n  \"build\": \"tsup src/index.ts --format cjs,esm --dts --no-splitting\",\n  \"release\": \"bumpp --commit --push --tag && pnpm publish\",\n  \"lint\": \"eslint .\"\n},\n```\n
+## 如何使用？
+#### 1、创建.env，填入yuque密钥
++ 将根目录.env.template文件重命名为.env
++ 填入YUQUE_SECRET_KEY，详情见 [官方文档](https://www.yuque.com/yuque/developer/api#785a3731)
+
+#### 2、选择希望提取的文档
++ 在yuque.config.js中填入希望提取文档的规则
++ 如希望提取某一文档的全部文档，可如下填写
+```js
+module.exports = {
+  repos: [
+    {
+      name: '知识库1',
+    },
+    {
+      name: '知识库2',
+    },
+  ],
+};
+```
+
+#### 3、部署
++ 安装依赖：`` npm i ``or `` pnpm i ``or `` yarn ``
++ 本地部署：``npm run dev``
++ 云部署：``npm run deploy`
+  > 如遇到问题详见下文档
+  + 发布到[阿里云](https://www.midwayjs.org/docs/serverless/aliyun_faas#%E5%8F%91%E5%B8%83%E5%88%B0%E9%98%BF%E9%87%8C%E4%BA%91)
+  + 发布到[腾讯云](https://www.midwayjs.org/docs/serverless/tencent_faas#%E5%8F%91%E5%B8%83%E5%88%B0%E8%85%BE%E8%AE%AF%E4%BA%91-scf)
