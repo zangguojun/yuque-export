@@ -1,18 +1,18 @@
-import { Configuration, ILifeCycle } from '@midwayjs/core';
+import { Configuration, ILifeCycle, IMidwayContainer } from '@midwayjs/core';
 import * as faas from '@midwayjs/faas';
-import * as defaultConfig from './config/config.default';
-import * as prodConfig from './config/config.prod';
+import { join } from 'path';
+import * as dotenv from 'dotenv';
+import * as lodash from 'lodash';
+
+dotenv.config();
 
 @Configuration({
   imports: [faas],
-  importConfigs: [
-    {
-      default: defaultConfig,
-      prod: prodConfig,
-    },
-  ],
+  importConfigs: [join(__dirname, 'config')],
   conflictCheck: true,
 })
 export class ContainerLifeCycle implements ILifeCycle {
-  async onReady() {}
+  async onReady(applicationContext: IMidwayContainer) {
+    applicationContext.registerObject('lodash', lodash);
+  }
 }
