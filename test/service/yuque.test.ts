@@ -31,13 +31,11 @@ describe('test/yueque.test.ts', () => {
       user: user?.login,
       data: { type: 'all' }
     })
-    console.log("🚀~ 34  repos", repos);
     expect(repos.length).toBeGreaterThanOrEqual(1);
   });
 
   it('should getDocList by user & confirm length', async () => {
     docs = await service.getDocList({ namespace: repos[0]?.namespace })
-    console.log("🚀~ 40  docs", docs);
     expect(docs.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -48,7 +46,6 @@ describe('test/yueque.test.ts', () => {
     const lakeResult = await service.getDocDetail(params)
     expect(lakeResult.id).not.toBeNull();
     expect(lakeResult.body_draft).toEqual('');
-    console.log("🚀~ 51  lakeResult", lakeResult);
     const result = await service.getDocDetail({ ...params, data: { raw: 1  } })
     expect(result.id).not.toBeNull();
     expect(result.body_draft).not.toEqual('');

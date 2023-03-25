@@ -3,20 +3,23 @@ import {
   Inject,
   ServerlessTrigger,
   ServerlessTriggerType,
-  Query,
 } from '@midwayjs/core';
 import { Context } from '@midwayjs/faas';
+import IYuqueService from '../interface/yuque.interface';
 
 @Provide()
 export class HelloHTTPService {
   @Inject()
   ctx: Context;
 
+  @Inject('yuqueService')
+  yuque: IYuqueService;
+
   @ServerlessTrigger(ServerlessTriggerType.HTTP, {
     path: '/',
     method: 'get',
   })
-  async handleHTTPEvent2(@Query('name') name = 'midwayjs') {
-    return `Hello ${name}`;
+  async handleRule() {
+    return this.yuque.getDocDetailByRules();
   }
 }

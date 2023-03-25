@@ -59,46 +59,66 @@ export class yuqueService implements IYuqueService {
     return this.client.docs.get(params);
   }
 
-  async getDocDetailCache(
-    params: RepoDetailResult[]
-  ): Promise<DocDetailResult[]> {
-    return this.client.docs.get();
-  }
-
-  async getDocDetailByRules(
-    params: DocDetailParams
-  ): Promise<DocDetailResult[]> {
+  async getDocDetailByRules(): Promise<DocDetailResult[]> {
     const userInfo = await this.getUser();
     const repoList = await this.getRepoList({ user: userInfo.login });
     const { repos } = config;
-    const docSlugList = [];
+    const docParamsList = [];
     for (const repo of repos) {
-      if (!repo.name || repoList.every(it => it.name !== repo.name)) return;
-      const docList = await this.getDocList({ namespace: repo.name });
+      const cur = repoList.find(r => r.name === repo.name);
+      if (!repo.name || !cur) return;
+      const { namespace } = cur;
+      const docList = await this.getDocList({ namespace });
       for (const doc of docList) {
-        const { name: docName, slug } = doc;
+        const { title, slug } = doc;
         let isSave = true;
-        if (Array.isArray(repo.includes)) {
-          isSave = repo.includes.some(it => {
-            if (this.lodash.isString(it) && docName === it) return true;
-            if (this.lodash.isObject(it) && docName?.[it.key](it)) return true;
+        if (Array.isArray(repo.includes) && repo.includes.length !== 0) {
+          const isIncludes = repo.includes.some(it => {
+            const { key, value } = it;
+            if (this.lodash.isString(it) && title === it) return true;
+            if (this.lodash.isObject(it)) {
+              switch (key) {
+                case 'StartsWith':
+                  return title.startsWith(value);
+                case 'EndsWith':
+                  return title.endsWith(value);
+                case 'RE':
+                  return title.match(value)?.[0] === title;
+                default:
+                  return false;
+              }
+            }
             return false;
           });
+          if (!isIncludes) isSave = false;
         }
-        if (Array.isArray(repo.excludes)) {
-          isSave = !repo.includes.every(it => {
-            if (this.lodash.isString(it) && docName === it) return false;
-            if (this.lodash.isObject(it) && docName?.[it.key](it)) return false;
-            return true;
+        if (Array.isArray(repo.excludes) && repo.excludes.length !== 0) {
+          const isExclude = !repo.excludes.some(it => {
+            const { key, value } = it;
+            if (this.lodash.isString(it) && title === it) return true;
+            if (this.lodash.isObject(it)) {
+              switch (key) {
+                case 'StartsWith':
+                  return title.startsWith(value);
+                case 'EndsWith':
+                  return title.endsWith(value);
+                case 'RE':
+                  return title.match(value)?.[0] === title;
+                default:
+                  return false;
+              }
+            }
+            return false;
           });
+          if (!isExclude) isSave = false;
         }
-        isSave && docSlugList.push(slug);
+        isSave && docParamsList.push({ namespace, slug });
       }
     }
 
     const docDetailList = [];
-    for (const docSlug of docSlugList) {
-      const docDetail = await this.getDocList({ namespace: docSlug });
+    for (const docParams of docParamsList) {
+      const docDetail = await this.getDocDetail(docParams);
       docDetailList.push(docDetail);
     }
     return docDetailList;

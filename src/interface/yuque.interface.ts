@@ -62,5 +62,5 @@ export default interface IYuqueService {
   getRepoList(params: RepoListParams): Promise<RepoDetailResult[]>;
   getDocList(params: DocListParams): Promise<DocDetailResult[]>;
   getDocDetail(params: DocDetailParams): Promise<DocDetailResult>;
-  // getDocDetailByRules(params: DocDetailParams): Promise<DocDetailResult[]>;
+  getDocDetailByRules(): Promise<DocDetailResult[]>;
 }
