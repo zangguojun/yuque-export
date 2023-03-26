@@ -13,3 +13,6 @@ custom:
 package:
   include:
     - .env
+    - .yuque/*
+  exclude:
+    - test/*
