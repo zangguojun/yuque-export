@@ -1,6 +1,6 @@
 import { Configuration, ILifeCycle, IMidwayContainer } from '@midwayjs/core';
-import * as faas from '@midwayjs/faas';
 import { join } from 'path';
+import * as faas from '@midwayjs/faas';
 import * as dotenv from 'dotenv';
 import * as lodash from 'lodash';
 

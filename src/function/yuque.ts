@@ -8,7 +8,7 @@ import { Context } from '@midwayjs/faas';
 import IYuqueService from '../interface/yuque.interface';
 
 @Provide()
-export class HelloHTTPService {
+export class YuqueHTTPService {
   @Inject()
   ctx: Context;
 

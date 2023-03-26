@@ -3,7 +3,13 @@ service:
 
 provider:
   name: aliyun
+  timeout: 6
+  initTimeout: 6
 
 custom:
   customDomain:
     domainName: auto
+
+package:
+  include:
+    - .env
