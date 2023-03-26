@@ -16,6 +16,7 @@ import IYuqueService, {
   DocDetailParams,
   DocDetailResult,
   RepoDetailResult,
+  DocParamsMap,
 } from '../interface/yuque.interface';
 const config = require('../../yuque.config.js');
 
@@ -28,15 +29,23 @@ export class yuqueService implements IYuqueService {
   @Inject('lodash')
   lodash;
 
+  @Inject('cache')
+  cache;
+
   @Config('yuqueSecretKey')
   secretKey;
 
   client: any;
   user: any;
 
+  getDocKey(namespace, slug) {
+    return `${namespace}|${slug}`;
+  }
+
   @Init()
   async initMethod() {
     this.client = new SDK({ token: this.secretKey });
+    await this.initCacheFromConfig();
   }
 
   async getUser(): Promise<User> {
@@ -59,21 +68,27 @@ export class yuqueService implements IYuqueService {
     return this.client.docs.get(params);
   }
 
-  async getDocDetailByRules(): Promise<DocDetailResult[]> {
-    const userInfo = await this.getUser();
-    const repoList = await this.getRepoList({ user: userInfo.login });
-    const { repos } = config;
-    const docParamsList = [];
-    for (const repo of repos) {
-      const cur = repoList.find(r => r.name === repo.name);
-      if (!repo.name || !cur) return;
-      const { namespace } = cur;
+  async initCacheFromConfig() {
+    this.user = await this.getUser();
+    const curRepoList = await this.getRepoList({ user: this.user.login });
+    const docParamsMap: DocParamsMap = new Map();
+    const { repos: configRepoList } = config;
+    for (const configRepo of configRepoList) {
+      const curRepo = curRepoList.find(
+        curRepo => curRepo.name === configRepo.name
+      );
+      if (!configRepo.name || !curRepo) return;
+      const { namespace } = curRepo;
       const docList = await this.getDocList({ namespace });
+      const slugList = [];
       for (const doc of docList) {
         const { title, slug } = doc;
         let isSave = true;
-        if (Array.isArray(repo.includes) && repo.includes.length !== 0) {
-          const isIncludes = repo.includes.some(it => {
+        if (
+          Array.isArray(configRepo.includes) &&
+          configRepo.includes.length !== 0
+        ) {
+          const isIncludes = configRepo.includes.some(it => {
             const { key, value } = it;
             if (this.lodash.isString(it) && title === it) return true;
             if (this.lodash.isObject(it)) {
@@ -92,8 +107,11 @@ export class yuqueService implements IYuqueService {
           });
           if (!isIncludes) isSave = false;
         }
-        if (Array.isArray(repo.excludes) && repo.excludes.length !== 0) {
-          const isExclude = !repo.excludes.some(it => {
+        if (
+          Array.isArray(configRepo.excludes) &&
+          configRepo.excludes.length !== 0
+        ) {
+          const isExclude = !configRepo.excludes.some(it => {
             const { key, value } = it;
             if (this.lodash.isString(it) && title === it) return true;
             if (this.lodash.isObject(it)) {
@@ -112,15 +130,66 @@ export class yuqueService implements IYuqueService {
           });
           if (!isExclude) isSave = false;
         }
-        isSave && docParamsList.push({ namespace, slug });
+        if (isSave) slugList.push(slug);
       }
+      docParamsMap.set(namespace, {
+        repo: curRepo,
+        slugList,
+      });
     }
 
-    const docDetailList = [];
-    for (const docParams of docParamsList) {
-      const docDetail = await this.getDocDetail(docParams);
-      docDetailList.push(docDetail);
+    await this.cache.setKey('map', docParamsMap);
+    for (const { repo, slugList } of docParamsMap.values()) {
+      const { namespace } = repo;
+      for (const slug of slugList) {
+        const docDetail = await this.getDocDetail({ namespace, slug });
+        await this.cache.setKey(this.getDocKey(namespace, slug), docDetail);
+      }
     }
-    return docDetailList;
+    await this.cache.save();
+  }
+
+  async getDocDetailByRules(): Promise<DocDetailResult[]> {
+    const curRepoList = await this.getRepoList({ user: this.user.login });
+    const showList = [];
+    const docParamsMap: DocParamsMap = await this.cache.getKey('map');
+    for (const { repo: cacheRepo, slugList } of docParamsMap.values()) {
+      const curRepo = curRepoList.find(
+        curRepo => curRepo.name === cacheRepo.name
+      );
+      if (cacheRepo.content_updated_at === curRepo.content_updated_at) {
+        for (const slug of slugList) {
+          showList.push(
+            await this.cache.getKey(this.getDocKey(cacheRepo.namespace, slug))
+          );
+        }
+      } else {
+        const curDocList = await this.getDocList({
+          namespace: cacheRepo.namespace,
+        });
+        for (const slug of slugList) {
+          const cacheDoc = await this.cache.getKey(
+            this.getDocKey(cacheRepo.namespace, slug)
+          );
+          const curDoc = curDocList.find(
+            curDoc => curDoc.slug === cacheDoc.slug
+          );
+          if (cacheDoc.content_updated_at === curDoc.content_updated_at) {
+            showList.push(cacheDoc);
+          } else {
+            const docDetail = await this.getDocDetail({
+              namespace: cacheRepo.namespace,
+              slug,
+            });
+            await this.cache.setKey(
+              this.getDocKey(cacheRepo.namespace, slug),
+              docDetail
+            );
+          }
+        }
+      }
+    }
+    await this.cache.save();
+    return showList;
   }
 }

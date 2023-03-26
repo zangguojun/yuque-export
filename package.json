@@ -23,6 +23,7 @@
     "@yuque/sdk": "^1.1.1",
     "await-to-js": "^3.0.0",
     "dotenv": "^16.0.3",
+    "flat-cache": "^3.0.4",
     "lodash": "^4.17.21"
   },
   "devDependencies": {

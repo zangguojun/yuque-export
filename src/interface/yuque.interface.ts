@@ -16,7 +16,8 @@ export type RepoListParams = {
 
 export type RepoDetailResult = {
   namespace: string;
-  content_updated_at: Date;
+  content_updated_at: string;
+  updated_at: string;
   [key: string]: any;
 };
 
@@ -27,6 +28,8 @@ export type DocListParams = {
 export type DocDetailResult = {
   id: number;
   slug: string;
+  content_updated_at: string;
+  updated_at: string;
   [key: string]: any;
 };
 
@@ -55,6 +58,11 @@ export type RepoRule = {
 export type DetailByRulesParams = {
   repo: Type | RepoRule[];
 };
+
+export type DocParamsMap = Map<
+  string,
+  { repo: RepoDetailResult; slugList: string[] }
+>;
 
 export default interface IYuqueService {
   getUser(): Promise<User>;
