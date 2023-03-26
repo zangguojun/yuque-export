@@ -25,4 +25,8 @@ module.exports = {
 + 云部署：``npm run deploy`
   > 如遇到问题详见下文档
   + 发布到[阿里云](https://www.midwayjs.org/docs/serverless/aliyun_faas#%E5%8F%91%E5%B8%83%E5%88%B0%E9%98%BF%E9%87%8C%E4%BA%91)
+    + ![](https://fastly.jsdelivr.net/gh/zangguojun/tuchuang@main/16798127817991679812781016.png)
   + 发布到[腾讯云](https://www.midwayjs.org/docs/serverless/tencent_faas#%E5%8F%91%E5%B8%83%E5%88%B0%E8%85%BE%E8%AE%AF%E4%BA%91-scf)
+
+## TODO
+-[ ] 使用文件缓存
