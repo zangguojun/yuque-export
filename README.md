@@ -29,4 +29,8 @@ module.exports = {
   + 发布到[腾讯云](https://www.midwayjs.org/docs/serverless/tencent_faas#%E5%8F%91%E5%B8%83%E5%88%B0%E8%85%BE%E8%AE%AF%E4%BA%91-scf)
 
 ## TODO
--[ ] 使用文件缓存
+-[X] 使用文件缓存
+  + 已于20230326支持文件缓存(.yuque)
+  + 对于在yuque.config.js中所包含的文档过多时(> 100)
+    + 可先在本地部署时请求``http://127.0.0.1:7001``，使其生成.yuque缓存文件
+    + 优点：避免部署serveless超时，且首次请求的响应速度更快
